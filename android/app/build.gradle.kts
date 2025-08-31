@@ -8,7 +8,6 @@ plugins {
 android {
     namespace = "com.example.chartix"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "25.2.9519653"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
