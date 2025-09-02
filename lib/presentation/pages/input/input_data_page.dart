@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../data/models/project.dart';
 import '../../../core/services/storage_service.dart';
 
@@ -16,18 +17,19 @@ class _InputDataPageState extends State<InputDataPage> {
   late List<List<TextEditingController>> table;
   late List<String> headers;
   late TextEditingController projectNameController;
+  late List<TextEditingController> headerControllers;
   bool _hasChanges = false;
 
   @override
   void initState() {
     super.initState();
-    // Buat project default
+
     currentProject =
         widget.project ??
         Project(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           name: "New project",
-          headers: ["Variabel", "Nilai"],
+          headers: ["Kategori", "Nilai"],
           data: [
             ["Data 1", "100"],
           ],
@@ -39,9 +41,15 @@ class _InputDataPageState extends State<InputDataPage> {
     projectNameController = TextEditingController(text: currentProject.name);
     projectNameController.addListener(() => setState(() => _hasChanges = true));
 
+    headerControllers = headers.map((h) {
+      final controller = TextEditingController(text: h);
+      controller.addListener(() => setState(() => _hasChanges = true));
+      return controller;
+    }).toList();
+
     table = currentProject.data.map((row) {
-      return row.asMap().entries.map((entry) {
-        final controller = TextEditingController(text: entry.value);
+      return row.map((cell) {
+        final controller = TextEditingController(text: cell);
         controller.addListener(() => setState(() => _hasChanges = true));
         return controller;
       }).toList();
@@ -51,6 +59,9 @@ class _InputDataPageState extends State<InputDataPage> {
   @override
   void dispose() {
     projectNameController.dispose();
+    for (var controller in headerControllers) {
+      controller.dispose();
+    }
     for (var row in table) {
       for (var controller in row) {
         controller.dispose();
@@ -62,9 +73,14 @@ class _InputDataPageState extends State<InputDataPage> {
   void _addColumn() {
     setState(() {
       headers.add("Data ${headers.length}");
+      headerControllers.add(
+        TextEditingController(text: "Data ${headers.length}")
+          ..addListener(() => setState(() => _hasChanges = true)),
+      );
+
       for (var row in table) {
-        final controller = TextEditingController();
-        controller.addListener(() => setState(() => _hasChanges = true));
+        final controller = TextEditingController()
+          ..addListener(() => setState(() => _hasChanges = true));
         row.add(controller);
       }
       _hasChanges = true;
@@ -75,6 +91,8 @@ class _InputDataPageState extends State<InputDataPage> {
     if (headers.length > 1) {
       setState(() {
         headers.removeLast();
+        headerControllers.removeLast().dispose();
+
         for (var row in table) {
           row.removeLast().dispose();
         }
@@ -111,6 +129,8 @@ class _InputDataPageState extends State<InputDataPage> {
 
   Future<void> _saveData() async {
     try {
+      headers = headerControllers.map((c) => c.text).toList();
+
       List<List<String>> data = table
           .map((row) => row.map((c) => c.text).toList())
           .toList();
@@ -248,118 +268,132 @@ class _InputDataPageState extends State<InputDataPage> {
             ),
           ),
 
-          // Tabel
+          // TABEL INPUT DATA
           Expanded(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // HEADER
+                  // Tombol tambah/hapus kolom
                   Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      ...List.generate(headers.length, (index) {
-                        return Container(
-                          width: 120,
-                          margin: const EdgeInsets.all(2),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 8,
-                            horizontal: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            border: Border.all(color: Colors.grey),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            headers[index],
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        );
-                      }),
-                      // Tombol kolom
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.add_box,
-                              color: Colors.green,
-                            ),
-                            onPressed: _addColumn,
-                          ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.indeterminate_check_box,
-                              color: Colors.red,
-                            ),
-                            onPressed: headers.length > 1
-                                ? _removeColumn
-                                : null,
-                          ),
-                        ],
+                      IconButton(
+                        icon: const Icon(Icons.add_box, color: Colors.green),
+                        onPressed: _addColumn,
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.indeterminate_check_box,
+                          color: Colors.red,
+                        ),
+                        onPressed: headers.length > 1 ? _removeColumn : null,
                       ),
                     ],
                   ),
 
-                  // ISI TABEL
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: List.generate(table.length, (rowIndex) {
-                          return Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ...List.generate(table[rowIndex].length, (
-                                colIndex,
-                              ) {
-                                return Container(
-                                  width: 120,
-                                  margin: const EdgeInsets.all(2),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.grey),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: TextField(
-                                    controller: table[rowIndex][colIndex],
-                                    decoration: const InputDecoration(
-                                      border: InputBorder.none,
-                                      isDense: true,
-                                      contentPadding: EdgeInsets.symmetric(
-                                        vertical: 8,
-                                        horizontal: 10,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }),
-                              // Tombol baris (hanya di baris terakhir)
-                              if (rowIndex == table.length - 1)
-                                Row(
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons.add_box,
-                                        color: Colors.blue,
-                                      ),
-                                      onPressed: _addRow,
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons.indeterminate_check_box,
-                                        color: Colors.orange,
-                                      ),
-                                      onPressed: table.length > 1
-                                          ? _removeRow
-                                          : null,
-                                    ),
-                                  ],
-                                ),
-                            ],
-                          );
-                        }),
+                  const SizedBox(height: 4),
+
+                  // Table header + data
+                  SingleChildScrollView(
+                    scrollDirection: Axis.vertical,
+                    child: Table(
+                      border: TableBorder.all(
+                        color: Colors.grey.shade400,
+                        width: 1,
                       ),
+                      defaultColumnWidth: const FixedColumnWidth(120),
+                      children: [
+                        // HEADER
+                        TableRow(
+                          decoration: BoxDecoration(color: Colors.grey[200]),
+                          children: headerControllers.map((controller) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 4,
+                              ),
+                              alignment: Alignment.center,
+                              child: TextField(
+                                controller: controller,
+                                textAlign: TextAlign.center,
+                                decoration: const InputDecoration(
+                                  border: InputBorder.none,
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 2,
+                                  ),
+                                ),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+
+                        // DATA ROWS
+                        ...table.map((rowControllers) {
+                          return TableRow(
+                            children: rowControllers.asMap().entries.map((
+                              colEntry,
+                            ) {
+                              int colIndex = colEntry.key;
+                              TextEditingController controller = colEntry.value;
+                              bool isValueColumn = colIndex != 0;
+
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 4,
+                                ),
+                                alignment: Alignment.centerLeft,
+                                child: TextField(
+                                  controller: controller,
+                                  keyboardType: isValueColumn
+                                      ? TextInputType.number
+                                      : TextInputType.text,
+                                  inputFormatters: isValueColumn
+                                      ? [FilteringTextInputFormatter.digitsOnly]
+                                      : [],
+                                  decoration: InputDecoration(
+                                    hintText: isValueColumn
+                                        ? 'Masukkan angka'
+                                        : 'Nama kategori',
+                                    border: InputBorder.none,
+                                    isDense: true,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                      vertical: 2,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          );
+                        }).toList(),
+                      ],
                     ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // Tombol tambah/hapus baris
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.add_box, color: Colors.blue),
+                        onPressed: _addRow,
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.indeterminate_check_box,
+                          color: Colors.orange,
+                        ),
+                        onPressed: table.length > 1 ? _removeRow : null,
+                      ),
+                    ],
                   ),
                 ],
               ),
