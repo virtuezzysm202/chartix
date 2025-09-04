@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../data/models/project.dart';
 import '../../../core/services/storage_service.dart';
+import './preview_chart_page.dart';
 
 class InputDataPage extends StatefulWidget {
   final Project? project;
@@ -337,10 +338,10 @@ class _InputDataPageState extends State<InputDataPage> {
                         ...table.map((rowControllers) {
                           return TableRow(
                             children: rowControllers.asMap().entries.map((
-                              colEntry,
+                              entry,
                             ) {
-                              int colIndex = colEntry.key;
-                              TextEditingController controller = colEntry.value;
+                              int colIndex = entry.key;
+                              TextEditingController controller = entry.value;
                               bool isValueColumn = colIndex != 0;
 
                               return Container(
@@ -372,26 +373,55 @@ class _InputDataPageState extends State<InputDataPage> {
                               );
                             }).toList(),
                           );
-                        }).toList(),
+                        }),
                       ],
                     ),
                   ),
 
                   const SizedBox(height: 8),
 
-                  // Tombol tambah/hapus baris
+                  // Tombol tambah/hapus baris + preview chart
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.add_box, color: Colors.blue),
-                        onPressed: _addRow,
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.add_box, color: Colors.blue),
+                            onPressed: _addRow,
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.indeterminate_check_box,
+                              color: Colors.orange,
+                            ),
+                            onPressed: table.length > 1 ? _removeRow : null,
+                          ),
+                        ],
                       ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.indeterminate_check_box,
-                          color: Colors.orange,
-                        ),
-                        onPressed: table.length > 1 ? _removeRow : null,
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          // Ambil data dari tabel
+                          final projectData = table
+                              .map((row) => row.map((c) => c.text).toList())
+                              .toList();
+
+                          final previewProject = currentProject.copyWith(
+                            name: projectNameController.text,
+                            headers: headers,
+                            data: projectData,
+                          );
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  PreviewChartPage(project: previewProject),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.bar_chart),
+                        label: const Text("Preview Chart"),
                       ),
                     ],
                   ),
