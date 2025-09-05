@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
 import '../../../data/models/project.dart';
+import '../../widgets/charts/chart_widget.dart';
 
 class ChartPage extends StatelessWidget {
   final Project project;
@@ -18,38 +18,15 @@ class ChartPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text("Chart - ${project.name}")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: BarChart(
-          BarChartData(
-            alignment: BarChartAlignment.spaceAround,
-            barGroups: List.generate(categories.length, (index) {
-              return BarChartGroupData(
-                x: index,
-                barRods: [
-                  BarChartRodData(
-                    toY: values[index],
-                    color: Colors.blue,
-                    width: 20,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ],
-              );
-            }),
-            titlesData: FlTitlesData(
-              leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true)),
-              bottomTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  getTitlesWidget: (value, meta) {
-                    if (value.toInt() >= 0 &&
-                        value.toInt() < categories.length) {
-                      return Text(categories[value.toInt()]);
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
-              ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Center(
+          child: AspectRatio(
+            aspectRatio: 1.6,
+            child: ChartWidget(
+              categories: categories,
+              values: values,
+              title: "Chart - ${project.name}",
             ),
           ),
         ),
