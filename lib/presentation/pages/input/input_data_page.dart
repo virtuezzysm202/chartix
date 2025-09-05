@@ -401,7 +401,6 @@ class _InputDataPageState extends State<InputDataPage> {
                       ),
                       ElevatedButton.icon(
                         onPressed: () {
-                          // Ambil data dari tabel
                           final projectData = table
                               .map((row) => row.map((c) => c.text).toList())
                               .toList();
@@ -415,8 +414,12 @@ class _InputDataPageState extends State<InputDataPage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) =>
-                                  PreviewChartPage(project: previewProject),
+                              builder: (_) => PreviewChartPage(
+                                project: previewProject,
+                                valueHeaders: headers.sublist(
+                                  1,
+                                ), // <-- ini wajib ditambahkan
+                              ),
                             ),
                           );
                         },

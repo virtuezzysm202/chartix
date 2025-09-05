@@ -9,12 +9,17 @@ class ChartPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Ambil data dari project
     final data = project.data;
 
-    // Convert format
+    // Ambil kategori (nama produk)
     final categories = data.map((row) => row[0]).toList();
-    final values = data.map((row) => double.tryParse(row[1]) ?? 0).toList();
+
+    // Ambil nilai stok dan penjualan sebagai list of list
+    final values = data.map((row) {
+      final stok = double.tryParse(row[1]) ?? 0;
+      final penjualan = double.tryParse(row[2]) ?? 0;
+      return [stok, penjualan];
+    }).toList();
 
     return Scaffold(
       appBar: AppBar(title: Text("Chart - ${project.name}")),

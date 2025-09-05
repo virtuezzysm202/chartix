@@ -4,25 +4,34 @@ import '../../widgets/charts/chart_widget.dart';
 
 class PreviewChartPage extends StatelessWidget {
   final Project project;
+  final List<String> valueHeaders; // header kolom nilai
 
-  const PreviewChartPage({super.key, required this.project});
+  const PreviewChartPage({
+    super.key,
+    required this.project,
+    required this.valueHeaders,
+  });
 
   @override
   Widget build(BuildContext context) {
     final categories = project.data.map((row) => row[0]).toList();
-    final values = project.data
-        .map((row) => double.tryParse(row[1]) ?? 0)
-        .toList();
+
+    final values = project.data.map((row) {
+      return row.sublist(1).map((e) => double.tryParse(e) ?? 0).toList();
+    }).toList();
 
     return Scaffold(
       appBar: AppBar(title: Text("Preview Chart - ${project.name}")),
       body: SingleChildScrollView(
-        // ✅ biar bisa digeser kalau chart tinggi
         padding: const EdgeInsets.all(16),
         child: Center(
           child: AspectRatio(
-            aspectRatio: 1.6, // ✅ kasih ukuran fix
-            child: ChartWidget(categories: categories, values: values),
+            aspectRatio: 1.6,
+            child: ChartWidget(
+              categories: categories,
+              values: values,
+              valueHeaders: valueHeaders, // kirim header nilai ke chart
+            ),
           ),
         ),
       ),

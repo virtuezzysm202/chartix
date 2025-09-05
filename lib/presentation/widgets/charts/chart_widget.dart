@@ -3,9 +3,10 @@ import 'package:fl_chart/fl_chart.dart';
 
 class ChartWidget extends StatelessWidget {
   final List<String> categories;
-  final List<double> values;
+  final List<List<double>> values;
   final String? title;
   final Color? primaryColor;
+  final List<String>? valueHeaders; // header kolom nilai
 
   const ChartWidget({
     super.key,
@@ -13,6 +14,7 @@ class ChartWidget extends StatelessWidget {
     required this.values,
     this.title,
     this.primaryColor,
+    this.valueHeaders,
   });
 
   @override
@@ -20,13 +22,22 @@ class ChartWidget extends StatelessWidget {
     final theme = Theme.of(context);
     final chartColor = primaryColor ?? theme.primaryColor;
 
-    // Hitung nilai maksimum
     final maxValue = values.isNotEmpty
-        ? values.reduce((a, b) => a > b ? a : b)
+        ? values.expand((list) => list).reduce((a, b) => a > b ? a : b)
         : 0.0;
     final roundedMax = maxValue > 0
         ? ((maxValue * 1.2 / 10).ceil() * 10).toDouble()
         : 10.0;
+
+    final barColors = [
+      chartColor,
+      Colors.redAccent,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.teal,
+      Colors.indigo,
+    ];
 
     return Card(
       elevation: 2,
@@ -35,7 +46,6 @@ class ChartWidget extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title
             if (title != null) ...[
               Text(
                 title!,
@@ -46,21 +56,50 @@ class ChartWidget extends StatelessWidget {
               const SizedBox(height: 12),
             ],
 
-            // Chart
+            // Optional: tampilkan legenda
+            if (valueHeaders != null) ...[
+              Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                children: List.generate(valueHeaders!.length, (i) {
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: barColors[i % barColors.length],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(valueHeaders![i]),
+                    ],
+                  );
+                }),
+              ),
+              const SizedBox(height: 12),
+            ],
+
             Expanded(
               child: BarChart(
                 BarChartData(
                   alignment: BarChartAlignment.spaceAround,
                   maxY: roundedMax,
-
-                  // Touch interaction
                   barTouchData: BarTouchData(
                     enabled: true,
                     touchTooltipData: BarTouchTooltipData(
                       getTooltipColor: (group) => Colors.black87,
                       getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                        String label = categories[group.x.toInt()];
+                        String barLabel =
+                            valueHeaders != null &&
+                                rodIndex < valueHeaders!.length
+                            ? valueHeaders![rodIndex]
+                            : 'Value ${rodIndex + 1}';
                         return BarTooltipItem(
-                          '${categories[group.x.toInt()]}\n${rod.toY.toStringAsFixed(1)}',
+                          '$label\n$barLabel: ${rod.toY.toStringAsFixed(1)}',
                           const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w500,
@@ -69,49 +108,42 @@ class ChartWidget extends StatelessWidget {
                       },
                     ),
                   ),
-
-                  // Grid
                   gridData: FlGridData(
                     show: true,
                     drawVerticalLine: false,
                     horizontalInterval: roundedMax / 4,
                     getDrawingHorizontalLine: (value) {
                       return FlLine(
-                        color: Colors.grey.withValues(alpha: 0.3),
+                        color: Colors.grey.withOpacity(0.3),
                         strokeWidth: 1,
                       );
                     },
                   ),
-
-                  // Border
                   borderData: FlBorderData(
                     show: true,
                     border: Border(
-                      left: BorderSide(
-                        color: Colors.grey.withValues(alpha: 0.5),
-                      ),
-                      bottom: BorderSide(
-                        color: Colors.grey.withValues(alpha: 0.5),
-                      ),
+                      left: BorderSide(color: Colors.grey.withOpacity(0.5)),
+                      bottom: BorderSide(color: Colors.grey.withOpacity(0.5)),
                     ),
                   ),
-
-                  // Bars
                   barGroups: List.generate(categories.length, (index) {
-                    return BarChartGroupData(
-                      x: index,
-                      barRods: [
+                    final rods = <BarChartRodData>[];
+                    for (int i = 0; i < values[index].length; i++) {
+                      rods.add(
                         BarChartRodData(
-                          toY: values[index],
-                          color: chartColor,
-                          width: 20,
+                          toY: values[index][i],
+                          color: barColors[i % barColors.length],
+                          width: 12,
                           borderRadius: BorderRadius.circular(4),
                         ),
-                      ],
+                      );
+                    }
+                    return BarChartGroupData(
+                      x: index,
+                      barRods: rods,
+                      barsSpace: 6,
                     );
                   }),
-
-                  // Titles
                   titlesData: FlTitlesData(
                     topTitles: const AxisTitles(
                       sideTitles: SideTitles(showTitles: false),
@@ -119,8 +151,6 @@ class ChartWidget extends StatelessWidget {
                     rightTitles: const AxisTitles(
                       sideTitles: SideTitles(showTitles: false),
                     ),
-
-                    // Y-axis
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
@@ -134,8 +164,6 @@ class ChartWidget extends StatelessWidget {
                         },
                       ),
                     ),
-
-                    // X-axis
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
