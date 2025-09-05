@@ -10,16 +10,18 @@ class ChartPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final data = project.data;
+    final headers = project.headers;
 
-    // Ambil kategori (nama produk)
+    // Ambil kategori (kolom pertama)
     final categories = data.map((row) => row[0]).toList();
 
-    // Ambil nilai stok dan penjualan sebagai list of list
+    // Ambil semua kolom nilai (kolom ke-1 sampai akhir) sebagai list of double
     final values = data.map((row) {
-      final stok = double.tryParse(row[1]) ?? 0;
-      final penjualan = double.tryParse(row[2]) ?? 0;
-      return [stok, penjualan];
+      return row.sublist(1).map((e) => double.tryParse(e) ?? 0).toList();
     }).toList();
+
+    // Ambil header kolom nilai (kolom ke-1 sampai akhir)
+    final valueHeaders = headers.length > 1 ? headers.sublist(1) : <String>[];
 
     return Scaffold(
       appBar: AppBar(title: Text("Chart - ${project.name}")),
@@ -31,6 +33,8 @@ class ChartPage extends StatelessWidget {
             child: ChartWidget(
               categories: categories,
               values: values,
+              valueHeaders:
+                  valueHeaders, // Kirim header kolom nilai ke ChartWidget
               title: "Chart - ${project.name}",
             ),
           ),
