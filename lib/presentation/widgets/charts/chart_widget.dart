@@ -7,6 +7,7 @@ class ChartWidget extends StatelessWidget {
   final String? title;
   final Color? primaryColor;
   final List<String>? valueHeaders; // header kolom nilai
+  final List<Color>? barColors; // warna bar custom
 
   const ChartWidget({
     super.key,
@@ -15,6 +16,7 @@ class ChartWidget extends StatelessWidget {
     this.title,
     this.primaryColor,
     this.valueHeaders,
+    this.barColors,
   });
 
   @override
@@ -29,7 +31,7 @@ class ChartWidget extends StatelessWidget {
         ? ((maxValue * 1.2 / 10).ceil() * 10).toDouble()
         : 10.0;
 
-    final barColors = [
+    final defaultBarColors = [
       chartColor,
       Colors.redAccent,
       Colors.green,
@@ -38,6 +40,8 @@ class ChartWidget extends StatelessWidget {
       Colors.teal,
       Colors.indigo,
     ];
+
+    final colorsToUse = barColors ?? defaultBarColors;
 
     return Card(
       elevation: 2,
@@ -56,7 +60,6 @@ class ChartWidget extends StatelessWidget {
               const SizedBox(height: 12),
             ],
 
-            // Optional: tampilkan legenda
             if (valueHeaders != null) ...[
               Wrap(
                 spacing: 12,
@@ -69,7 +72,7 @@ class ChartWidget extends StatelessWidget {
                         width: 16,
                         height: 16,
                         decoration: BoxDecoration(
-                          color: barColors[i % barColors.length],
+                          color: colorsToUse[i % colorsToUse.length],
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -132,9 +135,9 @@ class ChartWidget extends StatelessWidget {
                       rods.add(
                         BarChartRodData(
                           toY: values[index][i],
-                          color: barColors[i % barColors.length],
-                          width: 12,
-                          borderRadius: BorderRadius.circular(4),
+                          color: colorsToUse[i % colorsToUse.length],
+                          width: 16,
+                          borderRadius: BorderRadius.zero, // no curve, kaku
                         ),
                       );
                     }

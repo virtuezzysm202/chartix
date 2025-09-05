@@ -5,19 +5,22 @@ class PieChartWidget extends StatelessWidget {
   final List<String> categories;
   final List<double> values;
   final String? title;
+  final List<Color>? pieColors; // <<<< warna custom
 
   const PieChartWidget({
     super.key,
     required this.categories,
     required this.values,
     this.title,
+    this.pieColors,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final total = values.fold(0.0, (a, b) => a + b);
-    final colors = [
+
+    final defaultColors = [
       Colors.blue,
       Colors.red,
       Colors.green,
@@ -27,6 +30,8 @@ class PieChartWidget extends StatelessWidget {
       Colors.indigo,
       Colors.brown,
     ];
+
+    final colorsToUse = pieColors ?? defaultColors;
 
     return Card(
       elevation: 2,
@@ -50,7 +55,7 @@ class PieChartWidget extends StatelessWidget {
                     final value = values[i];
                     final percent = total == 0 ? 0 : (value / total) * 100;
                     return PieChartSectionData(
-                      color: colors[i % colors.length],
+                      color: colorsToUse[i % colorsToUse.length],
                       value: value,
                       title: '${percent.toStringAsFixed(1)}%',
                       radius: 60,
@@ -79,7 +84,7 @@ class PieChartWidget extends StatelessWidget {
                       width: 16,
                       height: 16,
                       decoration: BoxDecoration(
-                        color: colors[i % colors.length],
+                        color: colorsToUse[i % colorsToUse.length],
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),

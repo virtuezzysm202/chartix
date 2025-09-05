@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../../../data/models/project.dart';
 import '../../widgets/charts/chart_widget.dart';
 import '../../widgets/charts/pie_chart_widget.dart';
@@ -19,6 +20,9 @@ class _ChartPageState extends State<ChartPage> {
   late bool isSingleSeries;
   late String selectedChartType; // 'pie' or 'bar'
 
+  late List<Color> userBarColors;
+  late List<Color> userPieColors;
+
   @override
   void initState() {
     super.initState();
@@ -35,6 +39,60 @@ class _ChartPageState extends State<ChartPage> {
 
     isSingleSeries = values.every((v) => v.length == 1);
     selectedChartType = isSingleSeries ? 'pie' : 'bar';
+
+    // Default warna
+    userBarColors = List.generate(
+      valueHeaders.length,
+      (index) => Colors.primaries[index % Colors.primaries.length],
+    );
+    userPieColors = List.generate(
+      categories.length,
+      (index) => Colors.primaries[index % Colors.primaries.length],
+    );
+  }
+
+  /// 🔹 Fungsi generik pilih warna (untuk Bar & Pie)
+  void pickColor({
+    required int index,
+    required List<Color> colorList,
+    required String label,
+  }) {
+    Color currentColor = colorList[index];
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        Color tempColor = currentColor;
+        return AlertDialog(
+          title: Text('Pilih warna untuk $label'),
+          content: SingleChildScrollView(
+            child: ColorPicker(
+              pickerColor: currentColor,
+              onColorChanged: (color) {
+                tempColor = color;
+              },
+              labelTypes: const [], // nonaktifkan label deprecated
+              pickerAreaHeightPercent: 0.7,
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Batal'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            ElevatedButton(
+              child: const Text('Pilih'),
+              onPressed: () {
+                setState(() {
+                  colorList[index] = tempColor;
+                });
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -80,22 +138,91 @@ class _ChartPageState extends State<ChartPage> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Center(
-          child: AspectRatio(
-            aspectRatio: 1.6,
-            child: selectedChartType == 'pie'
-                ? PieChartWidget(
-                    categories: categories,
-                    values: values.map((v) => v[0]).toList(),
-                    title: "Pie Chart - ${widget.project.name}",
-                  )
-                : ChartWidget(
-                    categories: categories,
-                    values: values,
-                    valueHeaders: valueHeaders,
-                    title: "Bar Chart - ${widget.project.name}",
-                  ),
-          ),
+        child: Column(
+          children: [
+            // 🔹 Pilih warna sesuai chart type
+            if (selectedChartType == 'bar' && valueHeaders.isNotEmpty) ...[
+              Wrap(
+                spacing: 12,
+                children: List.generate(valueHeaders.length, (index) {
+                  return GestureDetector(
+                    onTap: () => pickColor(
+                      index: index,
+                      colorList: userBarColors,
+                      label: valueHeaders[index],
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 6,
+                        horizontal: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: userBarColors[index],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.black26),
+                      ),
+                      child: Text(
+                        valueHeaders[index],
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+              const SizedBox(height: 16),
+            ],
+            if (selectedChartType == 'pie' && categories.isNotEmpty) ...[
+              Wrap(
+                spacing: 12,
+                children: List.generate(categories.length, (index) {
+                  return GestureDetector(
+                    onTap: () => pickColor(
+                      index: index,
+                      colorList: userPieColors,
+                      label: categories[index],
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 6,
+                        horizontal: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: userPieColors[index],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.black26),
+                      ),
+                      child: Text(
+                        categories[index],
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // 🔹 Chart preview
+            Center(
+              child: AspectRatio(
+                aspectRatio: 1.6,
+                child: selectedChartType == 'pie'
+                    ? PieChartWidget(
+                        categories: categories,
+                        values: values.map((v) => v[0]).toList(),
+                        pieColors: userPieColors,
+                        title: "Pie Chart - ${widget.project.name}",
+                      )
+                    : ChartWidget(
+                        categories: categories,
+                        values: values,
+                        valueHeaders: valueHeaders,
+                        barColors: userBarColors,
+                        title: "Bar Chart - ${widget.project.name}",
+                      ),
+              ),
+            ),
+          ],
         ),
       ),
     );
