@@ -51,7 +51,7 @@ class _ChartPageState extends State<ChartPage> {
     );
   }
 
-  /// 🔹 Fungsi generik pilih warna (untuk Bar & Pie)
+  /// Fungsi generik pilih warna (untuk Bar & Pie)
   void pickColor({
     required int index,
     required List<Color> colorList,
@@ -140,7 +140,7 @@ class _ChartPageState extends State<ChartPage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // 🔹 Pilih warna sesuai chart type
+            //  Pilih warna sesuai chart type
             if (selectedChartType == 'bar' && valueHeaders.isNotEmpty) ...[
               Wrap(
                 spacing: 12,
@@ -202,7 +202,7 @@ class _ChartPageState extends State<ChartPage> {
               const SizedBox(height: 16),
             ],
 
-            // 🔹 Chart preview
+            //  Chart preview
             Center(
               child: AspectRatio(
                 aspectRatio: 1.6,
