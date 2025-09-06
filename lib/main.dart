@@ -4,6 +4,8 @@ import 'presentation/pages/data_list/data_list_page.dart';
 import 'presentation/pages/input/input_data_page.dart';
 import 'presentation/pages/create_project_page.dart';
 
+import 'presentation/pages/categorial/categorical_data_page.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -26,6 +28,7 @@ class MyApp extends StatelessWidget {
         '/input': (context) => const InputDataPage(),
         '/input-data': (context) => const InputDataPage(),
         '/create-project': (context) => const CreateProjectPage(),
+        '/categorical-data': (context) => const CategoricalDataPage(),
       },
       debugShowCheckedModeBanner: false,
     );

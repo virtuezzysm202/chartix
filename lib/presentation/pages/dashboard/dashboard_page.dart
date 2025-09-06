@@ -10,23 +10,53 @@ class DashboardPage extends StatelessWidget {
 
     final quickActions = [
       {
-        "title": "Input Data",
+        "title": "Numeric Data",
         "icon": Icons.edit_document,
         "route": AppRoutes.inputData,
+        "color": Colors.blue,
+      },
+      {
+        "title": "Categorical Data",
+        "icon": Icons.category,
+        "route": AppRoutes.categoricalData,
+        "color": Colors.purple,
       },
       {
         "title": "Data List",
         "icon": Icons.list_alt,
         "route": AppRoutes.dataList,
+        "color": Colors.teal,
       },
-      {"title": "Profile", "icon": Icons.person, "route": "/profile"},
-      {"title": "Settings", "icon": Icons.settings, "route": "/settings"},
+      {
+        "title": "Settings",
+        "icon": Icons.settings,
+        "route": "/settings",
+        "color": Colors.grey,
+      },
     ];
 
-    final categories = [
-      {"title": "Numeric", "icon": Icons.numbers, "color": Colors.teal},
-      {"title": "Categorical", "icon": Icons.category, "color": Colors.indigo},
-      {"title": "Text", "icon": Icons.text_snippet, "color": Colors.deepOrange},
+    final dataTypes = [
+      {
+        "title": "Numeric",
+        "description": "Numbers, calculations, measurements",
+        "icon": Icons.numbers,
+        "color": Colors.blue,
+        "route": AppRoutes.inputData,
+      },
+      {
+        "title": "Categorical",
+        "description": "Categories, text labels, classifications",
+        "icon": Icons.category,
+        "color": Colors.purple,
+        "route": AppRoutes.categoricalData,
+      },
+      {
+        "title": "Boolean",
+        "description": "True/false, yes/no, checkboxes",
+        "icon": Icons.check_box,
+        "color": Colors.green,
+        "route": AppRoutes.categoricalData,
+      },
     ];
 
     return Scaffold(
@@ -41,7 +71,8 @@ class DashboardPage extends StatelessWidget {
                 children: [
                   const CircleAvatar(
                     radius: 24,
-                    backgroundImage: AssetImage("assets/images/avatar.png"),
+                    backgroundColor: Colors.blue,
+                    child: Icon(Icons.person, color: Colors.white),
                   ),
                   const SizedBox(width: 12),
                   Column(
@@ -73,11 +104,11 @@ class DashboardPage extends StatelessWidget {
                   children: [
                     //  BANNER / HERO
                     Container(
-                      height: 140,
+                      height: 160,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20),
                         gradient: const LinearGradient(
-                          colors: [Colors.blue, Colors.indigo],
+                          colors: [Colors.blue, Colors.purple],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -87,34 +118,59 @@ class DashboardPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            "Your Data Hub",
+                            "Multi-Type Data Hub",
                             style: TextStyle(
-                              fontSize: 20,
+                              fontSize: 22,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            "Manage, visualize, and explore your datasets",
+                            "Create, manage and visualize numeric, categorical, and boolean datasets",
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: Colors.white70,
                             ),
                           ),
                           const Spacer(),
-                          ElevatedButton(
-                            onPressed: () => Navigator.pushNamed(
-                              context,
-                              AppRoutes.inputData,
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: Colors.blue,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: () => Navigator.pushNamed(
+                                    context,
+                                    AppRoutes.inputData,
+                                  ),
+                                  icon: const Icon(Icons.numbers),
+                                  label: const Text("Numeric"),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.white,
+                                    foregroundColor: Colors.blue,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
-                            child: const Text("Add New Data"),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: () => Navigator.pushNamed(
+                                    context,
+                                    AppRoutes.categoricalData,
+                                  ),
+                                  icon: const Icon(Icons.category),
+                                  label: const Text("Categorical"),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.purple.shade100,
+                                    foregroundColor: Colors.purple,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -141,21 +197,30 @@ class DashboardPage extends StatelessWidget {
                           child: Column(
                             children: [
                               Container(
-                                width: 60,
-                                height: 60,
+                                width: 64,
+                                height: 64,
                                 decoration: BoxDecoration(
-                                  color: Colors.blue.shade100,
+                                  color: (item["color"] as Color).withOpacity(
+                                    0.1,
+                                  ),
                                   borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: (item["color"] as Color).withOpacity(
+                                      0.3,
+                                    ),
+                                  ),
                                 ),
                                 child: Icon(
                                   item["icon"] as IconData,
-                                  color: Colors.blue.shade700,
+                                  color: item["color"] as Color,
+                                  size: 28,
                                 ),
                               ),
                               const SizedBox(height: 6),
                               Text(
                                 item["title"] as String,
                                 style: const TextStyle(fontSize: 12),
+                                textAlign: TextAlign.center,
                               ),
                             ],
                           ),
@@ -165,46 +230,84 @@ class DashboardPage extends StatelessWidget {
 
                     const SizedBox(height: 24),
 
-                    //  CATEGORIES
+                    //  DATA TYPES
                     Text(
-                      "Categories",
+                      "Data Types",
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
-                      height: 120,
+                      height: 160,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
-                        itemCount: categories.length,
+                        itemCount: dataTypes.length,
                         separatorBuilder: (_, __) => const SizedBox(width: 16),
                         itemBuilder: (context, index) {
-                          final cat = categories[index];
-                          return Container(
-                            width: 140,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: (cat["color"] as Color).withOpacity(0.9),
-                              borderRadius: BorderRadius.circular(20),
+                          final dataType = dataTypes[index];
+                          return GestureDetector(
+                            onTap: () => Navigator.pushNamed(
+                              context,
+                              dataType["route"] as String,
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Icon(
-                                  cat["icon"] as IconData,
-                                  color: Colors.white,
-                                  size: 28,
+                            child: Container(
+                              width: 180,
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: (dataType["color"] as Color)
+                                      .withOpacity(0.3),
+                                  width: 2,
                                 ),
-                                const Spacer(),
-                                Text(
-                                  cat["title"] as String,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withOpacity(0.1),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: 48,
+                                    height: 48,
+                                    decoration: BoxDecoration(
+                                      color: (dataType["color"] as Color)
+                                          .withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(
+                                      dataType["icon"] as IconData,
+                                      color: dataType["color"] as Color,
+                                      size: 24,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    dataType["title"] as String,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: dataType["color"] as Color,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    dataType["description"] as String,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
                             ),
                           );
                         },
@@ -214,11 +317,21 @@ class DashboardPage extends StatelessWidget {
                     const SizedBox(height: 24),
 
                     //  RECENT DATA
-                    Text(
-                      "Recent Data",
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Recent Projects",
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.pushNamed(context, AppRoutes.dataList),
+                          child: const Text("View All"),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     ListView.builder(
@@ -226,21 +339,73 @@ class DashboardPage extends StatelessWidget {
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: 3,
                       itemBuilder: (context, index) {
+                        final projectTypes = [
+                          "Numeric",
+                          "Categorical",
+                          "Mixed",
+                        ];
+                        final projectIcons = [
+                          Icons.numbers,
+                          Icons.category,
+                          Icons.dataset,
+                        ];
+                        final projectColors = [
+                          Colors.blue,
+                          Colors.purple,
+                          Colors.teal,
+                        ];
+
                         return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
                             leading: CircleAvatar(
-                              backgroundColor: Colors.blue.shade200,
-                              child: const Icon(
-                                Icons.insert_drive_file,
-                                color: Colors.white,
+                              backgroundColor: projectColors[index % 3]
+                                  .withOpacity(0.1),
+                              child: Icon(
+                                projectIcons[index % 3],
+                                color: projectColors[index % 3],
                               ),
                             ),
-                            title: Text("Dataset ${index + 1}"),
-                            subtitle: const Text("Last updated: today"),
-                            trailing: const Icon(Icons.chevron_right),
+                            title: Text(
+                              "${projectTypes[index % 3]} Dataset ${index + 1}",
+                            ),
+                            subtitle: Text(
+                              "Last updated: ${index + 1} day${index == 0 ? '' : 's'} ago",
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: projectColors[index % 3].withOpacity(
+                                      0.1,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    projectTypes[index % 3],
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: projectColors[index % 3],
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Icon(Icons.chevron_right),
+                              ],
+                            ),
                           ),
                         );
                       },
