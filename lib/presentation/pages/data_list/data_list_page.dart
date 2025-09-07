@@ -20,6 +20,7 @@ class _DataListPageState extends State<DataListPage>
   late Animation<double> _fadeAnimation;
   String searchQuery = '';
   bool isSearching = false;
+  bool groupByDataType = false;
 
   @override
   void initState() {
@@ -93,6 +94,70 @@ class _DataListPageState extends State<DataListPage>
         margin: const EdgeInsets.all(16),
       ),
     );
+  }
+
+  Future<void> _editProjectName(Project project) async {
+    TextEditingController nameController = TextEditingController(
+      text: project.name,
+    );
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.edit, color: Colors.blue.shade400),
+            const SizedBox(width: 8),
+            const Text('Edit Project Name'),
+          ],
+        ),
+        content: TextField(
+          controller: nameController,
+          decoration: const InputDecoration(
+            labelText: 'Project Name',
+            border: OutlineInputBorder(),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () =>
+                Navigator.of(context).pop(nameController.text.trim()),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue.shade400,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result.isNotEmpty && result != project.name) {
+      try {
+        final updatedProject = project.copyWith(name: result);
+        await StorageService.saveProject(updatedProject);
+        if (mounted) {
+          _loadProjects();
+          _showSuccessSnackBar('Project name updated successfully');
+        }
+      } catch (e) {
+        if (mounted) {
+          _showErrorSnackBar('Error updating project name: $e');
+        }
+      }
+    }
   }
 
   Future<void> _deleteProject(String projectId, String projectName) async {
@@ -185,6 +250,57 @@ class _DataListPageState extends State<DataListPage>
         .toList();
   }
 
+  Map<String, List<Project>> get groupedProjects {
+    final filtered = filteredProjects;
+    if (!groupByDataType) return {'All Projects': filtered};
+
+    Map<String, List<Project>> grouped = {};
+
+    for (Project project in filtered) {
+      String groupKey = _getProjectDataTypeGroup(project);
+      if (!grouped.containsKey(groupKey)) {
+        grouped[groupKey] = [];
+      }
+      grouped[groupKey]!.add(project);
+    }
+
+    return grouped;
+  }
+
+  String _getProjectDataTypeGroup(Project project) {
+    if (project.columnConfigs.isEmpty) return 'No Data Types';
+
+    Set<DataType> types = project.columnConfigs.map((c) => c.dataType).toSet();
+
+    if (types.length == 1) {
+      switch (types.first) {
+        case DataType.numeric:
+          return 'Numeric Only';
+        case DataType.boolean:
+          return 'Boolean Only';
+        case DataType.categorical:
+          return 'Text/Categorical Only';
+      }
+    } else if (types.length == 2) {
+      List<DataType> sortedTypes = types.toList()
+        ..sort((a, b) => a.toString().compareTo(b.toString()));
+      return '${_getDataTypeDisplayName(sortedTypes[0])} & ${_getDataTypeDisplayName(sortedTypes[1])}';
+    } else {
+      return 'Mixed Data Types';
+    }
+  }
+
+  String _getDataTypeDisplayName(DataType type) {
+    switch (type) {
+      case DataType.numeric:
+        return 'Numeric';
+      case DataType.boolean:
+        return 'Boolean';
+      case DataType.categorical:
+        return 'Text';
+    }
+  }
+
   Color _getProjectColor(int index) {
     final colors = [
       Colors.blue,
@@ -195,6 +311,17 @@ class _DataListPageState extends State<DataListPage>
       Colors.indigo,
     ];
     return colors[index % colors.length];
+  }
+
+  Color _getDataTypeColor(DataType dataType) {
+    switch (dataType) {
+      case DataType.numeric:
+        return Colors.orange;
+      case DataType.boolean:
+        return Colors.green;
+      case DataType.categorical:
+        return Colors.purple;
+    }
   }
 
   Widget _buildSearchBar() {
@@ -230,6 +357,34 @@ class _DataListPageState extends State<DataListPage>
             vertical: 12,
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildGroupToggle() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          Text(
+            'Group by data types:',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade700,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Switch(
+            value: groupByDataType,
+            onChanged: (value) {
+              setState(() {
+                groupByDataType = value;
+              });
+            },
+            activeColor: Colors.blue,
+          ),
+        ],
       ),
     );
   }
@@ -300,6 +455,38 @@ class _DataListPageState extends State<DataListPage>
     );
   }
 
+  Widget _buildDataTypeChips(Project project) {
+    if (project.columnConfigs.isEmpty) return const SizedBox();
+
+    Set<DataType> uniqueTypes = project.columnConfigs
+        .map((c) => c.dataType)
+        .toSet();
+
+    return Wrap(
+      spacing: 4,
+      children: uniqueTypes.map((dataType) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: _getDataTypeColor(dataType).withOpacity(0.1),
+            border: Border.all(
+              color: _getDataTypeColor(dataType).withOpacity(0.3),
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            _getDataTypeDisplayName(dataType),
+            style: TextStyle(
+              fontSize: 10,
+              color: _getDataTypeColor(dataType),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
   Widget _buildProjectCard(Project project, int index) {
     final projectColor = _getProjectColor(index);
 
@@ -343,7 +530,7 @@ class _DataListPageState extends State<DataListPage>
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
-                        Icons.description,
+                        Icons.data_usage,
                         color: projectColor,
                         size: 24,
                       ),
@@ -380,6 +567,16 @@ class _DataListPageState extends State<DataListPage>
                         borderRadius: BorderRadius.circular(12),
                       ),
                       itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit_outlined, size: 18),
+                              SizedBox(width: 12),
+                              Text('Edit Name'),
+                            ],
+                          ),
+                        ),
                         const PopupMenuItem(
                           value: 'view',
                           child: Row(
@@ -420,6 +617,9 @@ class _DataListPageState extends State<DataListPage>
                       ],
                       onSelected: (value) {
                         switch (value) {
+                          case 'edit':
+                            _editProjectName(project);
+                            break;
                           case 'view':
                             Navigator.of(context).push(
                               MaterialPageRoute(
@@ -444,6 +644,8 @@ class _DataListPageState extends State<DataListPage>
                     ),
                   ],
                 ),
+                const SizedBox(height: 12),
+                _buildDataTypeChips(project),
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -560,9 +762,52 @@ class _DataListPageState extends State<DataListPage>
     );
   }
 
+  Widget _buildGroupHeader(String groupName, int count) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.blue.shade200),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.folder, color: Colors.blue.shade600, size: 20),
+          const SizedBox(width: 8),
+          Text(
+            groupName,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.blue.shade700,
+            ),
+          ),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade600,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '$count',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final displayProjects = filteredProjects;
+    final grouped = groupedProjects;
+    final totalProjects = filteredProjects.length;
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
@@ -599,6 +844,7 @@ class _DataListPageState extends State<DataListPage>
       body: Column(
         children: [
           if (isSearching) _buildSearchBar(),
+          if (projects.isNotEmpty) _buildGroupToggle(),
           Expanded(
             child: isLoading
                 ? const Center(
@@ -607,22 +853,40 @@ class _DataListPageState extends State<DataListPage>
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
                     ),
                   )
-                : displayProjects.isEmpty
+                : totalProjects == 0
                 ? _buildEmptyState()
                 : FadeTransition(
                     opacity: _fadeAnimation,
                     child: RefreshIndicator(
                       onRefresh: _loadProjects,
                       color: Colors.blue,
-                      child: ListView.builder(
+                      child: ListView(
                         padding: const EdgeInsets.all(16),
-                        itemCount: displayProjects.length,
-                        itemBuilder: (context, index) {
-                          return _buildProjectCard(
-                            displayProjects[index],
-                            index,
-                          );
-                        },
+                        children: [
+                          if (groupByDataType) ...[
+                            for (String groupName in grouped.keys) ...[
+                              _buildGroupHeader(
+                                groupName,
+                                grouped[groupName]!.length,
+                              ),
+                              ...grouped[groupName]!.asMap().entries.map((
+                                entry,
+                              ) {
+                                return _buildProjectCard(
+                                  entry.value,
+                                  entry.key,
+                                );
+                              }),
+                              const SizedBox(height: 16),
+                            ],
+                          ] else ...[
+                            ...grouped['All Projects']!.asMap().entries.map((
+                              entry,
+                            ) {
+                              return _buildProjectCard(entry.value, entry.key);
+                            }),
+                          ],
+                        ],
                       ),
                     ),
                   ),

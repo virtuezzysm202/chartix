@@ -3,18 +3,19 @@ import '../../../data/models/project.dart';
 import '../../../core/services/storage_service.dart';
 import './categorical_preview_chart_page.dart';
 
-class CategoricalDataPage extends StatefulWidget {
+class MixedDataPage extends StatefulWidget {
   final Project? project;
+  final Map<String, dynamic>? templateData; //
 
-  const CategoricalDataPage({super.key, this.project});
+  const MixedDataPage({super.key, this.project, this.templateData}); //
 
   @override
-  State<CategoricalDataPage> createState() => _CategoricalDataPageState();
+  State<MixedDataPage> createState() => _MixedDataPageState();
 }
 
-class _CategoricalDataPageState extends State<CategoricalDataPage> {
+class _MixedDataPageState extends State<MixedDataPage> {
   late Project currentProject;
-  late List<List<dynamic>> table; // Changed to dynamic for mixed data types
+  late List<List<dynamic>> table;
   late List<ColumnConfig> columnConfigs;
   late TextEditingController projectNameController;
   bool _hasChanges = false;
@@ -27,10 +28,10 @@ class _CategoricalDataPageState extends State<CategoricalDataPage> {
         widget.project ??
         Project(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
-          name: "New Categorical Project",
-          headers: ["Name", "Category", "Active", "Description"],
+          name: "New Mixed Data Project",
+          headers: ["Name", "Category", "Active", "Score", "Description"],
           data: [
-            ["Item 1", "Type A", "true", "Sample description"],
+            ["Item 1", "Type A", "true", "85", "Sample description"],
           ],
           createdAt: DateTime.now(),
           columnConfigs: [
@@ -41,6 +42,7 @@ class _CategoricalDataPageState extends State<CategoricalDataPage> {
               categoryOptions: ["Type A", "Type B", "Type C"],
             ),
             const ColumnConfig(name: "Active", dataType: DataType.boolean),
+            const ColumnConfig(name: "Score", dataType: DataType.numeric),
             const ColumnConfig(
               name: "Description",
               dataType: DataType.categorical,
@@ -56,8 +58,13 @@ class _CategoricalDataPageState extends State<CategoricalDataPage> {
             header.toLowerCase().contains('enabled') ||
             header.toLowerCase().contains('status')) {
           return ColumnConfig(name: header, dataType: DataType.boolean);
+        } else if (header.toLowerCase().contains('score') ||
+            header.toLowerCase().contains('price') ||
+            header.toLowerCase().contains('amount') ||
+            header.toLowerCase().contains('count')) {
+          return ColumnConfig(name: header, dataType: DataType.numeric);
         }
-        // All text-like fields will use categorical without predefined options
+        // All other fields will use categorical without predefined options
         return ColumnConfig(name: header, dataType: DataType.categorical);
       }).toList();
     }
@@ -74,6 +81,8 @@ class _CategoricalDataPageState extends State<CategoricalDataPage> {
         if (index < columnConfigs.length) {
           if (columnConfigs[index].dataType == DataType.boolean) {
             return value.toLowerCase() == 'true';
+          } else if (columnConfigs[index].dataType == DataType.numeric) {
+            return double.tryParse(value) ?? 0.0;
           }
         }
         return value;
@@ -122,6 +131,8 @@ class _CategoricalDataPageState extends State<CategoricalDataPage> {
       final newRow = List.generate(columnConfigs.length, (i) {
         if (columnConfigs[i].dataType == DataType.boolean) {
           return false;
+        } else if (columnConfigs[i].dataType == DataType.numeric) {
+          return 0.0;
         }
         return i == 0 ? "Item ${table.length + 1}" : "";
       });
@@ -149,10 +160,21 @@ class _CategoricalDataPageState extends State<CategoricalDataPage> {
           if (newConfig.dataType == DataType.boolean) {
             if (row[index] is String) {
               row[index] = (row[index] as String).toLowerCase() == 'true';
+            } else if (row[index] is num) {
+              row[index] = (row[index] as num) > 0;
+            }
+          } else if (newConfig.dataType == DataType.numeric) {
+            if (row[index] is String) {
+              row[index] = double.tryParse(row[index] as String) ?? 0.0;
+            } else if (row[index] is bool) {
+              row[index] = (row[index] as bool) ? 1.0 : 0.0;
             }
           } else {
+            // Converting to categorical (text)
             if (row[index] is bool) {
               row[index] = (row[index] as bool).toString();
+            } else if (row[index] is num) {
+              row[index] = row[index].toString();
             }
           }
         }
@@ -163,15 +185,17 @@ class _CategoricalDataPageState extends State<CategoricalDataPage> {
 
   Future<void> _saveData() async {
     try {
-      // Convert table data to strings for storage
       List<List<String>> stringData = table.map((row) {
         return row.asMap().entries.map((entry) {
           int index = entry.key;
           dynamic value = entry.value;
 
-          if (index < columnConfigs.length &&
-              columnConfigs[index].dataType == DataType.boolean) {
-            return (value as bool).toString();
+          if (index < columnConfigs.length) {
+            if (columnConfigs[index].dataType == DataType.boolean) {
+              return (value as bool).toString();
+            } else if (columnConfigs[index].dataType == DataType.numeric) {
+              return (value as num).toString();
+            }
           }
           return value.toString();
         }).toList();
@@ -179,7 +203,7 @@ class _CategoricalDataPageState extends State<CategoricalDataPage> {
 
       final updatedProject = currentProject.copyWith(
         name: projectNameController.text.trim().isEmpty
-            ? "Categorical Project"
+            ? "Mixed Data Project"
             : projectNameController.text.trim(),
         headers: columnConfigs.map((c) => c.name).toList(),
         data: stringData,
@@ -232,14 +256,33 @@ class _CategoricalDataPageState extends State<CategoricalDataPage> {
           ),
         );
 
+      case DataType.numeric:
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: TextFormField(
+            initialValue: value.toString(),
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              isDense: true,
+            ),
+            onChanged: (newValue) {
+              setState(() {
+                table[rowIndex][colIndex] = double.tryParse(newValue) ?? 0.0;
+                _hasChanges = true;
+              });
+            },
+          ),
+        );
+
       case DataType.categorical:
         if (config.categoryOptions != null &&
             config.categoryOptions!.isNotEmpty) {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: DropdownButtonFormField<String>(
-              initialValue: config.categoryOptions!.contains(value)
-                  ? value as String
+              value: config.categoryOptions!.contains(value.toString())
+                  ? value.toString()
                   : null,
               decoration: const InputDecoration(
                 border: InputBorder.none,
@@ -257,7 +300,6 @@ class _CategoricalDataPageState extends State<CategoricalDataPage> {
             ),
           );
         } else {
-          // For categorical without predefined options, allow free text input (acts like text field)
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: TextFormField(
@@ -277,25 +319,6 @@ class _CategoricalDataPageState extends State<CategoricalDataPage> {
             ),
           );
         }
-
-      case DataType.numeric:
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: TextFormField(
-            initialValue: value.toString(),
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              isDense: true,
-            ),
-            onChanged: (newValue) {
-              setState(() {
-                table[rowIndex][colIndex] = newValue;
-                _hasChanges = true;
-              });
-            },
-          ),
-        );
     }
   }
 
@@ -326,7 +349,7 @@ class _CategoricalDataPageState extends State<CategoricalDataPage> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<DataType>(
-                  initialValue: selectedDataType,
+                  value: selectedDataType,
                   decoration: const InputDecoration(
                     labelText: 'Data Type',
                     border: OutlineInputBorder(),
@@ -443,7 +466,7 @@ class _CategoricalDataPageState extends State<CategoricalDataPage> {
           children: [
             Text(
               projectNameController.text.isEmpty
-                  ? "Categorical Project"
+                  ? "Mixed Data Project"
                   : projectNameController.text,
             ),
             if (_hasChanges)
@@ -516,7 +539,7 @@ class _CategoricalDataPageState extends State<CategoricalDataPage> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.category, color: Colors.purple),
+                const Icon(Icons.data_usage, color: Colors.purple),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -666,10 +689,14 @@ class _CategoricalDataPageState extends State<CategoricalDataPage> {
                               int index = entry.key;
                               dynamic value = entry.value;
 
-                              if (index < columnConfigs.length &&
-                                  columnConfigs[index].dataType ==
-                                      DataType.boolean) {
-                                return (value as bool).toString();
+                              if (index < columnConfigs.length) {
+                                if (columnConfigs[index].dataType ==
+                                    DataType.boolean) {
+                                  return (value as bool).toString();
+                                } else if (columnConfigs[index].dataType ==
+                                    DataType.numeric) {
+                                  return (value as num).toString();
+                                }
                               }
                               return value.toString();
                             }).toList();

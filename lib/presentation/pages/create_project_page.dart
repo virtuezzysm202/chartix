@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../data/models/project.dart';
 import '../../core/services/storage_service.dart';
-import '../pages/input/input_data_page.dart';
+import '../pages/categorial/mixed_data_page.dart';
 
 class CreateProjectPage extends StatefulWidget {
   const CreateProjectPage({super.key});
@@ -36,10 +36,20 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         name: name,
         createdAt: DateTime.now(),
-        headers: ["Label", "Data 1"],
+        headers: ["Name", "Category", "Active", "Score"],
         data: [
-          ["Variable 1", ""],
-          ["Variable 2", ""],
+          ["Item 1", "Type A", "true", "85"],
+          ["Item 2", "Type B", "false", "72"],
+        ],
+        columnConfigs: [
+          const ColumnConfig(name: "Name", dataType: DataType.categorical),
+          const ColumnConfig(
+            name: "Category",
+            dataType: DataType.categorical,
+            categoryOptions: ["Type A", "Type B", "Type C"],
+          ),
+          const ColumnConfig(name: "Active", dataType: DataType.boolean),
+          const ColumnConfig(name: "Score", dataType: DataType.numeric),
         ],
       );
 
@@ -48,13 +58,12 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (context) => InputDataPage(project: project),
+            builder: (context) => MixedDataPage(project: project),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        // Tambah pengecekan mounted di sini
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(
           context,
@@ -68,7 +77,7 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Buat Project Baru'),
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.purple,
         foregroundColor: Colors.white,
       ),
       body: Padding(
@@ -77,7 +86,7 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 20),
-            const Icon(Icons.create_new_folder, size: 80, color: Colors.blue),
+            const Icon(Icons.create_new_folder, size: 80, color: Colors.purple),
             const SizedBox(height: 20),
             const Text(
               'Nama Project',
@@ -97,9 +106,9 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: Colors.purple.shade50,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.shade200),
+                border: Border.all(color: Colors.purple.shade200),
               ),
               child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -109,9 +118,10 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                   SizedBox(height: 4),
-                  Text('• 2 kolom: Label dan Data 1'),
-                  Text('• 2 baris: Variable 1 dan Variable 2'),
-                  Text('• Bisa ditambah/dikurang nanti'),
+                  Text('• 4 kolom: Name, Category, Active, Score'),
+                  Text('• 2 baris sample data'),
+                  Text('• Mixed data types: text, dropdown, boolean, numeric'),
+                  Text('• Bisa dikustomisasi sepenuhnya nanti'),
                 ],
               ),
             ),
@@ -119,7 +129,7 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
             ElevatedButton(
               onPressed: _isLoading ? null : _createProject,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
+                backgroundColor: Colors.purple,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
