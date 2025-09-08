@@ -5,9 +5,9 @@ import './categorical_preview_chart_page.dart';
 
 class MixedDataPage extends StatefulWidget {
   final Project? project;
-  final Map<String, dynamic>? templateData; //
+  final Map<String, dynamic>? templateData;
 
-  const MixedDataPage({super.key, this.project, this.templateData}); //
+  const MixedDataPage({super.key, this.project, this.templateData});
 
   @override
   State<MixedDataPage> createState() => _MixedDataPageState();
@@ -29,9 +29,23 @@ class _MixedDataPageState extends State<MixedDataPage> {
         Project(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           name: "New Mixed Data Project",
-          headers: ["Name", "Category", "Active", "Score", "Description"],
+          headers: [
+            "Name",
+            "Category",
+            "Active",
+            "Score",
+            "Date",
+            "Description",
+          ],
           data: [
-            ["Item 1", "Type A", "true", "85", "Sample description"],
+            [
+              "Item 1",
+              "Type A",
+              "true",
+              "85",
+              "2024-01-15",
+              "Sample description",
+            ],
           ],
           createdAt: DateTime.now(),
           columnConfigs: [
@@ -43,16 +57,16 @@ class _MixedDataPageState extends State<MixedDataPage> {
             ),
             const ColumnConfig(name: "Active", dataType: DataType.boolean),
             const ColumnConfig(name: "Score", dataType: DataType.numeric),
+            const ColumnConfig(name: "Date", dataType: DataType.categorical),
             const ColumnConfig(
               name: "Description",
               dataType: DataType.categorical,
-            ), // Using categorical for text-like fields
+            ),
           ],
         );
 
     columnConfigs = List.from(currentProject.columnConfigs);
     if (columnConfigs.isEmpty) {
-      // Initialize default column configs if empty
       columnConfigs = currentProject.headers.map((header) {
         if (header.toLowerCase().contains('active') ||
             header.toLowerCase().contains('enabled') ||
@@ -64,7 +78,6 @@ class _MixedDataPageState extends State<MixedDataPage> {
             header.toLowerCase().contains('count')) {
           return ColumnConfig(name: header, dataType: DataType.numeric);
         }
-        // All other fields will use categorical without predefined options
         return ColumnConfig(name: header, dataType: DataType.categorical);
       }).toList();
     }
@@ -72,7 +85,6 @@ class _MixedDataPageState extends State<MixedDataPage> {
     projectNameController = TextEditingController(text: currentProject.name);
     projectNameController.addListener(() => setState(() => _hasChanges = true));
 
-    // Initialize table data
     table = currentProject.data.map((row) {
       return row.asMap().entries.map((entry) {
         int index = entry.key;
@@ -83,6 +95,9 @@ class _MixedDataPageState extends State<MixedDataPage> {
             return value.toLowerCase() == 'true';
           } else if (columnConfigs[index].dataType == DataType.numeric) {
             return double.tryParse(value) ?? 0.0;
+          }
+          if (_isDateColumn(columnConfigs[index].name)) {
+            return DateTime.tryParse(value) ?? DateTime.now();
           }
         }
         return value;
@@ -96,44 +111,30 @@ class _MixedDataPageState extends State<MixedDataPage> {
     super.dispose();
   }
 
+  bool _isDateColumn(String columnName) {
+    return columnName.toLowerCase().contains('date') ||
+        columnName.toLowerCase().contains('time') ||
+        columnName.toLowerCase().contains('created') ||
+        columnName.toLowerCase().contains('updated');
+  }
+
   void _addColumn() {
     setState(() {
       String newColumnName = "Column ${columnConfigs.length + 1}";
       columnConfigs.add(
-        ColumnConfig(
-          name: newColumnName,
-          dataType: DataType.categorical,
-        ), // Default to categorical
+        ColumnConfig(name: newColumnName, dataType: DataType.categorical),
       );
-
-      // Add to table data
-      for (var row in table) {
-        row.add("");
-      }
+      for (var row in table) row.add("");
       _hasChanges = true;
     });
-  }
-
-  void _removeColumn() {
-    if (columnConfigs.length > 1) {
-      setState(() {
-        columnConfigs.removeLast();
-        for (var row in table) {
-          row.removeLast();
-        }
-        _hasChanges = true;
-      });
-    }
   }
 
   void _addRow() {
     setState(() {
       final newRow = List.generate(columnConfigs.length, (i) {
-        if (columnConfigs[i].dataType == DataType.boolean) {
-          return false;
-        } else if (columnConfigs[i].dataType == DataType.numeric) {
-          return 0.0;
-        }
+        if (columnConfigs[i].dataType == DataType.boolean) return false;
+        if (columnConfigs[i].dataType == DataType.numeric) return 0.0;
+        if (_isDateColumn(columnConfigs[i].name)) return DateTime.now();
         return i == 0 ? "Item ${table.length + 1}" : "";
       });
       table.add(newRow);
@@ -141,40 +142,56 @@ class _MixedDataPageState extends State<MixedDataPage> {
     });
   }
 
-  void _removeRow() {
-    if (table.length > 1) {
-      setState(() {
-        table.removeLast();
-        _hasChanges = true;
-      });
-    }
+  void _showDeleteRowDialog(int rowIndex) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('Delete Row'),
+        content: Text('Are you sure you want to delete row ${rowIndex + 1}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() {
+                table.removeAt(rowIndex);
+                _hasChanges = true;
+              });
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _updateColumnConfig(int index, ColumnConfig newConfig) {
     setState(() {
       columnConfigs[index] = newConfig;
-
-      // Convert existing data if data type changed
       for (var row in table) {
         if (index < row.length) {
           if (newConfig.dataType == DataType.boolean) {
-            if (row[index] is String) {
-              row[index] = (row[index] as String).toLowerCase() == 'true';
-            } else if (row[index] is num) {
+            if (row[index] is String)
+              row[index] = row[index].toLowerCase() == 'true';
+            else if (row[index] is num)
               row[index] = (row[index] as num) > 0;
-            }
           } else if (newConfig.dataType == DataType.numeric) {
-            if (row[index] is String) {
+            if (row[index] is String)
               row[index] = double.tryParse(row[index] as String) ?? 0.0;
-            } else if (row[index] is bool) {
+            else if (row[index] is bool)
               row[index] = (row[index] as bool) ? 1.0 : 0.0;
-            }
           } else {
-            // Converting to categorical (text)
-            if (row[index] is bool) {
+            if (row[index] is bool)
               row[index] = (row[index] as bool).toString();
-            } else if (row[index] is num) {
+            else if (row[index] is num)
               row[index] = row[index].toString();
+            else if (row[index] is DateTime && !_isDateColumn(newConfig.name)) {
+              row[index] = (row[index] as DateTime).toIso8601String().split(
+                'T',
+              )[0];
             }
           }
         }
@@ -189,13 +206,13 @@ class _MixedDataPageState extends State<MixedDataPage> {
         return row.asMap().entries.map((entry) {
           int index = entry.key;
           dynamic value = entry.value;
-
           if (index < columnConfigs.length) {
-            if (columnConfigs[index].dataType == DataType.boolean) {
+            if (columnConfigs[index].dataType == DataType.boolean)
               return (value as bool).toString();
-            } else if (columnConfigs[index].dataType == DataType.numeric) {
+            if (columnConfigs[index].dataType == DataType.numeric)
               return (value as num).toString();
-            }
+            if (_isDateColumn(columnConfigs[index].name) && value is DateTime)
+              return value.toIso8601String().split('T')[0];
           }
           return value.toString();
         }).toList();
@@ -217,7 +234,6 @@ class _MixedDataPageState extends State<MixedDataPage> {
           currentProject = updatedProject;
           _hasChanges = false;
         });
-
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Data berhasil disimpan!'),
@@ -226,97 +242,121 @@ class _MixedDataPageState extends State<MixedDataPage> {
         );
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted)
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
+    }
+  }
+
+  Future<void> _selectDate(int rowIndex, int colIndex) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: table[rowIndex][colIndex] is DateTime
+          ? table[rowIndex][colIndex]
+          : DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) {
+      setState(() {
+        table[rowIndex][colIndex] = picked;
+        _hasChanges = true;
+      });
     }
   }
 
   Widget _buildCell(int rowIndex, int colIndex) {
     if (colIndex >= columnConfigs.length) return const SizedBox();
-
     final config = columnConfigs[colIndex];
     final value = table[rowIndex][colIndex];
 
+    if (_isDateColumn(config.name)) {
+      return InkWell(
+        onTap: () => _selectDate(rowIndex, colIndex),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+              const SizedBox(width: 8),
+              Text(
+                value is DateTime
+                    ? "${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}"
+                    : value.toString(),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     switch (config.dataType) {
       case DataType.boolean:
-        return Container(
-          padding: const EdgeInsets.all(8),
-          alignment: Alignment.center,
-          child: Checkbox(
-            value: value as bool,
-            onChanged: (newValue) {
-              setState(() {
-                table[rowIndex][colIndex] = newValue ?? false;
-                _hasChanges = true;
-              });
-            },
-          ),
+        return Checkbox(
+          value: value as bool,
+          onChanged: (newValue) {
+            setState(() {
+              table[rowIndex][colIndex] = newValue ?? false;
+              _hasChanges = true;
+            });
+          },
         );
-
       case DataType.numeric:
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: TextFormField(
-            initialValue: value.toString(),
-            keyboardType: TextInputType.number,
+        return TextFormField(
+          initialValue: value.toString(),
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            border: InputBorder.none,
+            isDense: true,
+          ),
+          onChanged: (newValue) {
+            setState(() {
+              table[rowIndex][colIndex] = double.tryParse(newValue) ?? 0.0;
+              _hasChanges = true;
+            });
+          },
+        );
+      case DataType.categorical:
+        if (config.categoryOptions != null &&
+            config.categoryOptions!.isNotEmpty) {
+          return DropdownButtonFormField<String>(
+            value: config.categoryOptions!.contains(value.toString())
+                ? value.toString()
+                : null,
             decoration: const InputDecoration(
               border: InputBorder.none,
               isDense: true,
             ),
+            items: config.categoryOptions!.map((option) {
+              return DropdownMenuItem(value: option, child: Text(option));
+            }).toList(),
             onChanged: (newValue) {
               setState(() {
-                table[rowIndex][colIndex] = double.tryParse(newValue) ?? 0.0;
+                table[rowIndex][colIndex] = newValue ?? "";
                 _hasChanges = true;
               });
             },
-          ),
-        );
-
-      case DataType.categorical:
-        if (config.categoryOptions != null &&
-            config.categoryOptions!.isNotEmpty) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: DropdownButtonFormField<String>(
-              value: config.categoryOptions!.contains(value.toString())
-                  ? value.toString()
-                  : null,
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                isDense: true,
-              ),
-              items: config.categoryOptions!.map((option) {
-                return DropdownMenuItem(value: option, child: Text(option));
-              }).toList(),
-              onChanged: (newValue) {
-                setState(() {
-                  table[rowIndex][colIndex] = newValue ?? "";
-                  _hasChanges = true;
-                });
-              },
-            ),
           );
         } else {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: TextFormField(
-              initialValue: value.toString(),
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                isDense: true,
-              ),
-              maxLines: null, // Allow multiple lines
-              keyboardType: TextInputType.multiline,
-              onChanged: (newValue) {
-                setState(() {
-                  table[rowIndex][colIndex] = newValue;
-                  _hasChanges = true;
-                });
-              },
+          return TextFormField(
+            initialValue: value.toString(),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              isDense: true,
             ),
+            maxLines: null,
+            keyboardType: TextInputType.multiline,
+            onChanged: (newValue) {
+              setState(() {
+                table[rowIndex][colIndex] = newValue;
+                _hasChanges = true;
+              });
+            },
           );
         }
     }
@@ -356,22 +396,17 @@ class _MixedDataPageState extends State<MixedDataPage> {
                   ),
                   items: DataType.values.map((type) {
                     String displayName = type.toString().split('.').last;
-                    // Show "text" label for categorical without options
                     if (type == DataType.categorical &&
                         (config.categoryOptions == null ||
-                            config.categoryOptions!.isEmpty)) {
+                            config.categoryOptions!.isEmpty))
                       displayName += " (text)";
-                    }
                     return DropdownMenuItem(
                       value: type,
                       child: Text(displayName),
                     );
                   }).toList(),
-                  onChanged: (newType) {
-                    setDialogState(() {
-                      selectedDataType = newType!;
-                    });
-                  },
+                  onChanged: (newType) =>
+                      setDialogState(() => selectedDataType = newType!),
                 ),
                 if (selectedDataType == DataType.categorical) ...[
                   const SizedBox(height: 16),
@@ -385,11 +420,9 @@ class _MixedDataPageState extends State<MixedDataPage> {
                       title: Text(option),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete),
-                        onPressed: () {
-                          setDialogState(() {
-                            categoryOptions.remove(option);
-                          });
-                        },
+                        onPressed: () => setDialogState(
+                          () => categoryOptions.remove(option),
+                        ),
                       ),
                     ),
                   ),
@@ -437,6 +470,46 @@ class _MixedDataPageState extends State<MixedDataPage> {
               onPressed: () => Navigator.pop(context),
               child: const Text('Cancel'),
             ),
+            if (columnConfigs.length > 1)
+              TextButton(
+                onPressed: () {
+                  // Konfirmasi delete kolom
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Delete Column'),
+                      content: Text(
+                        'Are you sure you want to delete column "${config.name}"?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context); // tutup konfirmasi
+                            setState(() {
+                              columnConfigs.removeAt(columnIndex);
+                              for (var row in table) row.removeAt(columnIndex);
+                              _hasChanges = true;
+                            });
+                            Navigator.pop(context); // tutup dialog configure
+                          },
+                          child: const Text(
+                            'Delete',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                child: const Text(
+                  'Delete Column',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
             TextButton(
               onPressed: () {
                 final newConfig = ColumnConfig(
@@ -455,6 +528,36 @@ class _MixedDataPageState extends State<MixedDataPage> {
         ),
       ),
     );
+  }
+
+  Color _getDataTypeColor(ColumnConfig config) {
+    switch (config.dataType) {
+      case DataType.categorical:
+        if (_isDateColumn(config.name)) return Colors.teal;
+        if (config.categoryOptions != null &&
+            config.categoryOptions!.isNotEmpty)
+          return Colors.blue;
+        return Colors.purple;
+      case DataType.boolean:
+        return Colors.green;
+      case DataType.numeric:
+        return Colors.orange;
+    }
+  }
+
+  String _getDataTypeLabel(ColumnConfig config) {
+    switch (config.dataType) {
+      case DataType.categorical:
+        if (_isDateColumn(config.name)) return 'date';
+        if (config.categoryOptions != null &&
+            config.categoryOptions!.isNotEmpty)
+          return 'categorical';
+        return 'text';
+      case DataType.boolean:
+        return 'boolean';
+      case DataType.numeric:
+        return 'numeric';
+    }
   }
 
   @override
@@ -572,20 +675,9 @@ class _MixedDataPageState extends State<MixedDataPage> {
                         icon: const Icon(Icons.add_box, color: Colors.green),
                         onPressed: _addColumn,
                       ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.indeterminate_check_box,
-                          color: Colors.red,
-                        ),
-                        onPressed: columnConfigs.length > 1
-                            ? _removeColumn
-                            : null,
-                      ),
                     ],
                   ),
-
                   const SizedBox(height: 4),
-
                   // Table
                   SingleChildScrollView(
                     scrollDirection: Axis.vertical,
@@ -599,61 +691,112 @@ class _MixedDataPageState extends State<MixedDataPage> {
                         // Header
                         TableRow(
                           decoration: BoxDecoration(color: Colors.purple[100]),
-                          children: columnConfigs.asMap().entries.map((entry) {
-                            int index = entry.key;
-                            ColumnConfig config = entry.value;
-                            return GestureDetector(
-                              onTap: () => _showColumnConfigDialog(index),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 12,
-                                ),
-                                alignment: Alignment.center,
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      config.name,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: _getDataTypeColor(config),
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: Text(
-                                        _getDataTypeLabel(config),
-                                        style: const TextStyle(
-                                          fontSize: 10,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                          children: [
+                            // Row number header
+                            const Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: Center(
+                                child: Text(
+                                  '#',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
                                 ),
                               ),
-                            );
-                          }).toList(),
+                            ),
+                            ...columnConfigs.asMap().entries.map((entry) {
+                              int index = entry.key;
+                              ColumnConfig config = entry.value;
+                              return GestureDetector(
+                                onTap: () => _showColumnConfigDialog(index),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 12,
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        config.name,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: _getDataTypeColor(config),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          _getDataTypeLabel(config),
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }),
+                          ],
                         ),
 
                         // Data rows
                         ...table.asMap().entries.map((rowEntry) {
                           int rowIndex = rowEntry.key;
                           return TableRow(
-                            children: columnConfigs.asMap().entries.map((
-                              colEntry,
-                            ) {
-                              int colIndex = colEntry.key;
-                              return _buildCell(rowIndex, colIndex);
-                            }).toList(),
+                            children: [
+                              // Row number with options
+                              GestureDetector(
+                                onTap: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: Text(
+                                        'Row ${rowIndex + 1} options',
+                                      ),
+                                      content: const Text(
+                                        'Choose an action for this row.',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context),
+                                          child: const Text('Cancel'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.pop(context);
+                                            _showDeleteRowDialog(rowIndex);
+                                          },
+                                          child: const Text(
+                                            'Delete Row',
+                                            style: TextStyle(color: Colors.red),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  alignment: Alignment.center,
+                                  child: Text('${rowIndex + 1}'),
+                                ),
+                              ),
+                              ...columnConfigs.asMap().entries.map(
+                                (colEntry) =>
+                                    _buildCell(rowIndex, colEntry.key),
+                              ),
+                            ],
                           );
                         }),
                       ],
@@ -661,42 +804,29 @@ class _MixedDataPageState extends State<MixedDataPage> {
                   ),
 
                   const SizedBox(height: 8),
-
-                  // Row controls and preview
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.add_box, color: Colors.blue),
-                            onPressed: _addRow,
-                          ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.indeterminate_check_box,
-                              color: Colors.orange,
-                            ),
-                            onPressed: table.length > 1 ? _removeRow : null,
-                          ),
-                        ],
+                      IconButton(
+                        icon: const Icon(Icons.add_box, color: Colors.blue),
+                        onPressed: _addRow,
                       ),
                       ElevatedButton.icon(
                         onPressed: () {
-                          // Convert table data for preview
                           final stringData = table.map((row) {
                             return row.asMap().entries.map((entry) {
                               int index = entry.key;
                               dynamic value = entry.value;
-
                               if (index < columnConfigs.length) {
                                 if (columnConfigs[index].dataType ==
-                                    DataType.boolean) {
+                                    DataType.boolean)
                                   return (value as bool).toString();
-                                } else if (columnConfigs[index].dataType ==
-                                    DataType.numeric) {
+                                if (columnConfigs[index].dataType ==
+                                    DataType.numeric)
                                   return (value as num).toString();
-                                }
+                                if (_isDateColumn(columnConfigs[index].name) &&
+                                    value is DateTime)
+                                  return value.toIso8601String().split('T')[0];
                               }
                               return value.toString();
                             }).toList();
@@ -718,12 +848,12 @@ class _MixedDataPageState extends State<MixedDataPage> {
                             ),
                           );
                         },
+                        icon: const Icon(Icons.pie_chart),
+                        label: const Text("Preview Chart"),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.purple,
                           foregroundColor: Colors.white,
                         ),
-                        icon: const Icon(Icons.pie_chart),
-                        label: const Text("Preview Chart"),
                       ),
                     ],
                   ),
@@ -734,38 +864,5 @@ class _MixedDataPageState extends State<MixedDataPage> {
         ],
       ),
     );
-  }
-
-  Color _getDataTypeColor(ColumnConfig config) {
-    switch (config.dataType) {
-      case DataType.categorical:
-        // Different colors for categorical with/without options
-        if (config.categoryOptions != null &&
-            config.categoryOptions!.isNotEmpty) {
-          return Colors.blue; // Categorical with dropdown
-        } else {
-          return Colors.purple; // Categorical as text
-        }
-      case DataType.boolean:
-        return Colors.green;
-      case DataType.numeric:
-        return Colors.orange;
-    }
-  }
-
-  String _getDataTypeLabel(ColumnConfig config) {
-    switch (config.dataType) {
-      case DataType.categorical:
-        if (config.categoryOptions != null &&
-            config.categoryOptions!.isNotEmpty) {
-          return 'categorical';
-        } else {
-          return 'text';
-        }
-      case DataType.boolean:
-        return 'boolean';
-      case DataType.numeric:
-        return 'numeric';
-    }
   }
 }
