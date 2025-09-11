@@ -47,7 +47,7 @@ class _DashboardPageState extends State<DashboardPage>
           projects = loadedProjects;
           isLoading = false;
         });
-        _fadeController.forward(from: 0); // reset animasi setiap refresh
+        _fadeController.forward(from: 0);
       }
     } catch (e) {
       if (mounted) {
@@ -74,17 +74,10 @@ class _DashboardPageState extends State<DashboardPage>
 
   Widget _buildProjectCard(Project project, int index) {
     final animation =
-        Tween<Offset>(
-          begin: const Offset(0, 0.1), // geser sedikit dari bawah
-          end: Offset.zero,
-        ).animate(
+        Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
           CurvedAnimation(
             parent: _fadeController,
-            curve: Interval(
-              0.1 * index, // delay antar item biar berurutan
-              1.0,
-              curve: Curves.easeOut,
-            ),
+            curve: Interval(0.1 * index, 1.0, curve: Curves.easeOut),
           ),
         );
 
@@ -163,9 +156,39 @@ class _DashboardPageState extends State<DashboardPage>
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
       appBar: AppBar(
-        title: const Text(
-          "DataHub Pro",
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Fixed asset path
+            Image.asset(
+              'assets/images/Logo.png',
+              width: 32,
+              height: 32,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade600,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    CupertinoIcons.chart_bar_alt_fill,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                );
+              },
+            ),
+            const SizedBox(width: 8),
+            const Flexible(
+              child: Text(
+                "Chartix",
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
         backgroundColor: const Color(0xFFF9F9F9),
         foregroundColor: Colors.black87,
@@ -195,23 +218,26 @@ class _DashboardPageState extends State<DashboardPage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Quick Actions
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildQuickAction(
-                          "New",
-                          CupertinoIcons.add,
-                          AppRoutes.mixedData,
-                          Colors.blue,
-                        ),
-                        _buildQuickAction(
-                          "List",
-                          CupertinoIcons.list_bullet,
-                          AppRoutes.dataList,
-                          Colors.green,
-                        ),
-                      ],
+                    // Quick Actions with better spacing
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _buildQuickAction(
+                            "New",
+                            CupertinoIcons.add,
+                            AppRoutes.mixedData,
+                            Colors.blue,
+                          ),
+                          _buildQuickAction(
+                            "List",
+                            CupertinoIcons.list_bullet,
+                            AppRoutes.dataList,
+                            Colors.green,
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 28),
 
@@ -228,12 +254,31 @@ class _DashboardPageState extends State<DashboardPage>
                       Center(
                         child: Padding(
                           padding: const EdgeInsets.all(40),
-                          child: Text(
-                            "No projects yet",
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 15,
-                            ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                CupertinoIcons.folder,
+                                size: 48,
+                                color: Colors.grey.shade400,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                "No projects yet",
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                "Create your first project using the buttons above",
+                                style: TextStyle(
+                                  color: Colors.grey.shade500,
+                                  fontSize: 13,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
                         ),
                       )
@@ -260,7 +305,7 @@ class _DashboardPageState extends State<DashboardPage>
           children: [
             const ListTile(
               title: Text(
-                "DataHub Pro",
+                "Chartix",
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
               ),
               subtitle: Text("Manage your data effortlessly"),
