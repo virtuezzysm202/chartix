@@ -106,18 +106,6 @@ npx expo start
 
 ---
 
-## Images
-
-Place all screenshots in `./assets/images/` with the following filenames:
-
-* `Dashboard.png`
-* `Menu.png`
-* `Makedata.png`
-* `Edit data.png`
-* `Project list.png`
-* `Settings.png`
-* `Charts.png`
-* `Logo.png`
 
 ---
 
