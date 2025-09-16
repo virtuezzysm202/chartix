@@ -9,7 +9,7 @@ It allows users to create, edit, organize, and visualize datasets with flexible 
 
 ### Dashboard
 
-![Dashboard](./assets/images/Dashboard.png)
+<img src="./assets/images/Dashboard.png" alt="Dashboard" width="400"/>
 
 * Central view with:
 
@@ -20,7 +20,7 @@ It allows users to create, edit, organize, and visualize datasets with flexible 
 
 ### Menu
 
-![Menu](./assets/images/Menu.png)
+<img src="./assets/images/Menu.png" alt="Menu" width="400"/>
 
 * Contains shortcuts to:
 
@@ -33,7 +33,7 @@ It allows users to create, edit, organize, and visualize datasets with flexible 
 
 ### Make Data
 
-![Make Data](./assets/images/Makedata.png)
+<img src="./assets/images/Makedata.png" alt="Make Data" width="400"/>
 
 * Create a new dataset from scratch
 * Define column names and types
@@ -43,7 +43,7 @@ It allows users to create, edit, organize, and visualize datasets with flexible 
 
 ### Edit Data
 
-![Edit Data](./assets/images/Edit%20data.png)
+<img src="./assets/images/Edit%20data.png" alt="Edit Data" width="400"/>
 
 * Modify an existing dataset
 * Edit dataset name
@@ -54,7 +54,7 @@ It allows users to create, edit, organize, and visualize datasets with flexible 
 
 ### Project List
 
-![Project List](./assets/images/Project%20list.png)
+<img src="./assets/images/Project%20list.png" alt="Project List" width="400"/>
 
 * Displays all saved projects
 * Open, edit, or remove datasets
@@ -64,7 +64,7 @@ It allows users to create, edit, organize, and visualize datasets with flexible 
 
 ### Settings
 
-![Settings](./assets/images/Settings.png)
+<img src="./assets/images/Settings.png" alt="Settings" width="400"/>
 
 * Manage application preferences:
 
@@ -76,7 +76,7 @@ It allows users to create, edit, organize, and visualize datasets with flexible 
 
 ### Chart
 
-![Chart](./assets/images/Charts.png)
+<img src="./assets/images/Charts.png" alt="Chart" width="400"/>
 
 * Visualize data in chart form
 * Change chart types (bar, line, pie, etc.)
